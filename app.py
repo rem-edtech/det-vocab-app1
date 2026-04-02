@@ -16,8 +16,11 @@ json_files = [f for f in os.listdir('.') if f.endswith('.json')]
 selected_file = st.sidebar.selectbox("Choose a week:", json_files)
 
 data = load_data(selected_file)
-words = data['vocabulary']
-random.shuffle(words)
+all_words = data['vocabulary']
+random.shuffle(all_words)
+# This is the "Magic" line: 
+# It takes only the first 20 words from the shuffled pool
+words = all_words[:20]
 
 if 'index' not in st.session_state or 'file' not in st.session_state or st.session_state.file != selected_file:
     st.session_state.index = 0
