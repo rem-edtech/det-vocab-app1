@@ -2,6 +2,7 @@ import streamlit as st
 import json
 import time
 import os
+import random
 
 def load_data(file_name):
     with open(file_name, 'r') as f:
@@ -16,6 +17,7 @@ selected_file = st.sidebar.selectbox("Choose a week:", json_files)
 
 data = load_data(selected_file)
 words = data['vocabulary']
+random.shuffle(words)
 
 if 'index' not in st.session_state or 'file' not in st.session_state or st.session_state.file != selected_file:
     st.session_state.index = 0
