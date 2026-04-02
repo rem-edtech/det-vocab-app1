@@ -17,20 +17,16 @@ selected_file = st.sidebar.selectbox("Choose a week:", json_files)
 
 data = load_data(selected_file)
 
-# --- CRITICAL CHANGE: Logic moved inside Session State ---
+# --- Session State Initialization ---
 if 'active_words' not in st.session_state or st.session_state.file != selected_file:
-    # 1. Get the full list from JSON
     all_pool = data['vocabulary']
-    # 2. Shuffle the entire pool
     random.shuffle(all_pool)
-    # 3. Store ONLY 20 words in the session memory
     st.session_state.active_words = all_pool[:20]
-    # 4. Reset counters
     st.session_state.index = 0
     st.session_state.score = 0
     st.session_state.file = selected_file
+    st.session_state.history = [] # NEW: To store results
 
-# Define 'words' based on what we saved in the session memory
 words = st.session_state.active_words
 
 st.title("DET: Read and Select")
@@ -52,26 +48,49 @@ if st.session_state.index < len(words):
     # Timer logic (5 seconds)
     for i in range(50, 0, -1):
         progress_bar.progress(i * 2)
-        if yes:
-            if current['is_real']: 
+        
+        user_choice = None
+        if yes: user_choice = True
+        if no: user_choice = False
+            
+        if user_choice is not None:
+            # Check if correct
+            is_correct = (user_choice == current['is_real'])
+            if is_correct: 
                 st.session_state.score += 1
+            
+            # Record in History
+            st.session_state.history.append({
+                "Word": current['word'],
+                "Your Answer": "YES" if user_choice else "NO",
+                "Correct?": "✅" if is_correct else "❌",
+                "Real Word?": "Yes" if current['is_real'] else "No"
+            })
+            
             st.session_state.index += 1
             st.rerun()
-        if no:
-            if not current['is_real']: 
-                st.session_state.score += 1
-            st.session_state.index += 1
-            st.rerun()
+            
         time.sleep(0.1)
 
-    # Auto-advance if time runs out
+    # Time's Up Logic
+    st.session_state.history.append({
+        "Word": current['word'],
+        "Your Answer": "No Answer (Time Up)",
+        "Correct?": "❌",
+        "Real Word?": "Yes" if current['is_real'] else "No"
+    })
     st.session_state.index += 1
     st.rerun()
 
 else:
     st.success("Lesson Complete!")
     st.metric("Final Score", f"{st.session_state.score} / {len(words)}")
-    if st.button("Try Again"):
-        # Reset everything to pick a NEW random 20 words
+    
+    # NEW: Display the Results Table
+    st.subheader("Review Your Answers")
+    st.table(st.session_state.history)
+    
+    if st.button("Try Again (New Random 20)"):
         del st.session_state.active_words 
+        del st.session_state.history
         st.rerun()
